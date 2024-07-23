@@ -13,19 +13,23 @@ public class Enermy : MonoBehaviour
     bool isLive;
 
     Animator anim;
+    Collider2D coll;
     Rigidbody2D rigid;
     SpriteRenderer spriter;
+    WaitForFixedUpdate wait;
 
     void Awake()
     {
         anim = GetComponent<Animator>();
         rigid = GetComponent<Rigidbody2D>();
         spriter = GetComponent<SpriteRenderer>();
+        wait = new WaitForFixedUpdate();
+        coll = GetComponent<Collider2D>();
     }
 
     void FixedUpdate()
     {
-        if (!isLive)
+        if (!isLive || anim.GetCurrentAnimatorStateInfo(0).IsName("Hit"))
             return;
 
         Vector2 dirVec = target.position - rigid.position;
@@ -45,6 +49,10 @@ public class Enermy : MonoBehaviour
     {
         target = GameManager.Instance.player.GetComponent<Rigidbody2D>();
         isLive = true;
+        coll.enabled = true;
+        rigid.simulated = true;
+        spriter.sortingOrder = 2;
+        anim.SetBool("Dead", false);
         health = maxhealth;
     }
 
@@ -58,21 +66,35 @@ public class Enermy : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D collision)
     {
-        if (!collision.CompareTag("Bullet"))
+        if (!collision.CompareTag("Bullet") || !isLive)
             return;
 
         health -= collision.GetComponent<Bullet>().damage;
-        
+        StartCoroutine(KncockBack());
         if(health > 0)
         {   // .. live, Hit Action
+            anim.SetTrigger("Hit");
 
         }
         else
         {   // Die
-            Dead();
+            isLive = false;
+            coll.enabled = false;
+            rigid.simulated = false;
+            spriter.sortingOrder = 1;
+            anim.SetBool("Dead", true);
+            GameManager.Instance.kill++;
+            GameManager.Instance.GetExp();
         }
     }
+    IEnumerator KncockBack()
+    {
+        yield return wait;  //One physical frame delay
+        Vector3 playerPos = GameManager.Instance.player.transform.position;
+        Vector3 dirVec = transform.position - playerPos;
+        rigid.AddForce(dirVec.normalized * 3, ForceMode2D.Impulse);
 
+    }
     void Dead()
     {
         gameObject.SetActive(false);
