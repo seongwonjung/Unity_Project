@@ -29,6 +29,8 @@ public class Enermy : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (!GameManager.Instance.isLive)
+            return;
         if (!isLive || anim.GetCurrentAnimatorStateInfo(0).IsName("Hit"))
             return;
 
@@ -40,6 +42,8 @@ public class Enermy : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!GameManager.Instance.isLive)
+            return;
         if (!isLive)
             return;
         spriter.flipX = target.position.x < rigid.position.x;
@@ -74,7 +78,7 @@ public class Enermy : MonoBehaviour
         if(health > 0)
         {   // .. live, Hit Action
             anim.SetTrigger("Hit");
-
+            AudioManager.instance.Playsfx(AudioManager.Sfx.Hit);
         }
         else
         {   // Die
@@ -85,6 +89,9 @@ public class Enermy : MonoBehaviour
             anim.SetBool("Dead", true);
             GameManager.Instance.kill++;
             GameManager.Instance.GetExp();
+            
+            if(GameManager.Instance.isLive)
+                AudioManager.instance.Playsfx(AudioManager.Sfx.Dead);
         }
     }
     IEnumerator KncockBack()

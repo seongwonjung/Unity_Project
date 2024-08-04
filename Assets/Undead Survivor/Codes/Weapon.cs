@@ -16,15 +16,12 @@ public class Weapon : MonoBehaviour
 
     void Awake()
     {
-        player = GetComponentInParent<Player>();
-    }
-
-    void Start()
-    {
-        Init();
+        player = GameManager.Instance.player;
     }
     void Update()
     {
+        if (!GameManager.Instance.isLive)
+            return;
         switch (id)
         {
             case 0:
@@ -49,26 +46,52 @@ public class Weapon : MonoBehaviour
     }
     public void LevelUp(float damage, int count)
     {
-        this.damage = damage;
+        this.damage = damage * Character.Damage;
         this.count += count;
 
         if(id == 0)
             Batch();
-        
+
+        player.BroadcastMessage("ApplyGear",SendMessageOptions.DontRequireReceiver);
     }
 
-    public void Init()
+    public void Init(itemData data)
     {
+        // Base Set
+        name = "Weapon " + data.itemId;
+        transform.parent = player.transform;
+        transform.localPosition = Vector3.zero;
+
+        // Property Set
+        id = data.itemId;
+        damage = data.baseDamage * Character.Damage;
+        count = data.baseCount + Character.Count;
+
+        for(int index = 0; index < GameManager.Instance.pool.prefabs.Length; index++)
+        {
+            if(data.projectile == GameManager.Instance.pool.prefabs[index])
+            {
+                prefabid = index;
+                break;
+            }
+        }
+
         switch (id)
         {
             case 0:
-                speed = 150;
+                speed = 150 * Character.WeaponSpeed ;
                 Batch();
                 break;
             default:
-                speed = 0.3f;
+                speed = 0.5f*Character.WeaponRate;
                 break;
         }
+        // Hand Set
+        Hand hand = player.hands[(int)data.itemType];
+        hand.spriter.sprite = data.hand;
+        hand.gameObject.SetActive(true);
+
+        player.BroadcastMessage("ApplyGear", SendMessageOptions.DontRequireReceiver);
     }
 
     void Batch()
@@ -109,5 +132,7 @@ public class Weapon : MonoBehaviour
         bullet.position = transform.position;
         bullet.rotation = Quaternion.FromToRotation(Vector3.up, dir);
         bullet.GetComponent<Bullet>().Init(damage, count, dir);
+
+        AudioManager.instance.Playsfx(AudioManager.Sfx.Range);
     }
 }
